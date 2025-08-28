@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turn Your Screenshot Graveyard into a Goldmine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom Styles beyond Tailwind */
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .hero-gradient-text {
+            background: linear-gradient(90deg, #4F46E5, #EC4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
+        }
+
+        .form-container input:focus {
+            box-shadow: 0 0 0 2px #111827, 0 0 0 4px #4F46E5;
+            outline: none;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        .fade-in-delay-1 { animation-delay: 0.2s; opacity: 0; }
+        .fade-in-delay-2 { animation-delay: 0.4s; opacity: 0; }
+        .fade-in-delay-3 { animation-delay: 0.6s; opacity: 0; }
+
+        .message-box {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-2xl mx-auto text-center">
+
+        <!-- Main Hero Section -->
+        <main id="hero-section">
+            <h1 class="text-5xl md:text-7xl font-bold hero-gradient-text mb-4 fade-in">
+                Your phone is a graveyard of brilliant ideas.
+            </h1>
+            <p class="text-lg md:text-xl text-gray-400 mb-8 max-w-xl mx-auto fade-in fade-in-delay-1">
+                My phone was a mess of screenshots—a brilliant, chaotic graveyard of ideas. I built a tool that uses AI to automatically tag, organize, and connect them. It's a creative partner that helps you think and sparks your next big thing. Be the first to try it.
+            </p>
+
+            <!-- Email Form -->
+            <form id="waitlist-form" class="form-container flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto fade-in fade-in-delay-2" novalidate>
+                <label for="email" class="sr-only">Email Address</label>
+                <input type="email" id="email" name="email" placeholder="Enter your email address" required
+                       class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 transition duration-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                <button type="submit" id="submit-button"
+                        class="w-full sm:w-auto px-6 py-3 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-indigo-500 transition duration-300 transform hover:scale-105 whitespace-nowrap">
+                    Get Early Access
+                </button>
+            </form>
+             <div id="spinner" class="hidden justify-center items-center mt-4">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+            </div>
+
+            <!-- Message Display Area -->
+            <div id="message" class="message-box mt-4 h-6 text-sm opacity-0 transform translate-y-2"></div>
+        </main>
+
+    </div>
+
+    <!-- Firebase and App Logic -->
+    <script type="module">
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, where, getDocs, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- DOM Elements ---
+        const form = document.getElementById('waitlist-form');
+        const emailInput = document.getElementById('email');
+        const submitButton = document.getElementById('submit-button');
+        const messageBox = document.getElementById('message');
+        const spinner = document.getElementById('spinner');
+
+        // --- Firebase Configuration ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined'
+            ? JSON.parse(__firebase_config)
+            : {
+                apiKey: "AIzaSyBKM-DeAFw_RSbAwc2LWiJ-9HShhNT2AYU",
+                authDomain: "cognisnap.firebaseapp.com",
+                projectId: "cognisnap",
+                storageBucket: "cognisnap.appspot.com",
+                messagingSenderId: "629113101294",
+                appId: "1:629113101294:web:2343bf1d8b3492f9168cff"
+            };
+
+        // --- App Initialization ---
+        let db, auth;
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            setLogLevel('debug');
+            
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+                console.log("Firebase initialized and user signed in with custom token.");
+            } else {
+                await signInAnonymously(auth);
+                console.log("Firebase initialized and user signed in anonymously.");
+            }
+        } catch (error) {
+            console.error("Firebase initialization failed:", error);
+            displayMessage("Could not connect to the service. Please try again later.", "error");
+        }
+
+        // --- Utility Functions  ok---
+        function displayMessage(text, type) {
+            messageBox.textContent = text;
+            messageBox.className = `message-box mt-4 h-6 text-sm opacity-100 transform translate-y-0 ${type === 'success' ? 'text-green-400' : 'text-red-400'}`;
+            
+            setTimeout(() => {
+                 messageBox.className = 'message-box mt-4 h-6 text-sm opacity-0 transform translate-y-2';
+            }, 5000);
+        }
+
+        function isValidEmail(email) {
+            const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return regex.test(email);
+        }
+        
+        function setLoading(isLoading) {
+            if (isLoading) {
+                submitButton.disabled = true;
+                submitButton.textContent = 'Submitting...';
+                spinner.classList.remove('hidden');
+                spinner.classList.add('flex');
+            } else {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Get Early Access';
+                spinner.classList.add('hidden');
+                spinner.classList.remove('flex');
+            }
+        }
+
+        // --- Event Listener for Form Submission ---
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!db) {
+                displayMessage("Service is unavailable. Please try again later.", "error");
+                return;
+            }
+
+            const email = emailInput.value.trim();
+
+            if (!isValidEmail(email)) {
+                displayMessage("Please enter a valid email address.", "error");
+                return;
+            }
+
+            setLoading(true);
+
+            try {
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'cognisnap';
+                const waitlistCollectionRef = collection(db, `artifacts/${appId}/public/data/waitlist`);
+
+                const q = query(waitlistCollectionRef, where("email", "==", email));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    displayMessage("This email is already on the list. We'll keep you posted!", "success");
+                    emailInput.value = '';
+                    setLoading(false);
+                    return;
+                }
+
+                await addDoc(waitlistCollectionRef, {
+                    email: email,
+                    timestamp: serverTimestamp()
+                });
+
+                displayMessage("Thank you! You're on the list.", "success");
+                emailInput.value = '';
+
+            } catch (error) {
+                console.error("Error adding document: ", error);
+                displayMessage("Something went wrong. Please try again.", "error");
+            } finally {
+                setLoading(false);
+            }
+        });
+    </script>
+</body>
+</html>
